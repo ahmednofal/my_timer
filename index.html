@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏱</text></svg>" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interval Timer</title>
+  </head>
+  <body>
+    <div id="app">
+
+      <!-- Header -->
+      <div class="header">
+        <h1>⏱ Interval Timer</h1>
+        <p>Composable, repeating interval sequences</p>
+      </div>
+
+      <!-- Input section -->
+      <div class="input-section">
+        <div class="dsl-input-row">
+          <input
+            id="dsl-input"
+            class="dsl-input"
+            type="text"
+            placeholder="(10 -> 25) * 4 -> 20"
+            spellcheck="false"
+            autocomplete="off"
+          />
+          <button id="start-btn" class="btn btn-primary">▶ Start</button>
+        </div>
+
+        <div class="input-controls">
+          <label class="loop-toggle">
+            <input type="checkbox" id="loop-check" />
+            Loop infinitely
+          </label>
+        </div>
+
+        <div id="error-msg" class="error-msg"></div>
+
+        <div class="syntax-help">
+          <strong>Syntax:</strong>
+          <code>10 -> 25</code> chains intervals (minutes) &bull;
+          <code>(…) * 4</code> repeats a group &bull;
+          <code>1:30</code> for 1 min 30 sec &bull;
+          Nest freely: <code>((5 -> 10) * 2 -> 20) * 3</code><br />
+          <strong>Keys:</strong> <code>Space</code> play/pause &bull;
+          <code>N</code> / <code>→</code> skip &bull;
+          <code>R</code> reset
+        </div>
+        <div class="sound-test">
+          <span class="sound-test-label">Test sounds:</span>
+          <button id="test-step-sound" class="btn btn-secondary btn-small">🥁 Step</button>
+          <button id="test-complete-sound" class="btn btn-secondary btn-small">🥁 Complete</button>
+        </div>      </div>
+
+      <!-- Timer display (hidden until started) -->
+      <div id="timer-display" class="timer-display">
+
+        <div class="step-info">
+          <div id="step-label" class="step-label"></div>
+          <div id="loop-info" class="loop-info"></div>
+        </div>
+
+        <div id="countdown" class="countdown">00:00</div>
+
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div id="progress-fill" class="progress-bar-fill" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div id="step-track" class="step-track"></div>
+
+        <div class="timer-controls">
+          <button id="play-pause-btn" class="btn btn-primary">⏸ Pause</button>
+          <button id="skip-btn" class="btn btn-secondary">⏭ Skip</button>
+          <button id="stop-btn" class="btn btn-secondary">⏹ Stop</button>
+        </div>
+
+        <div id="finished-msg" class="finished-msg">✓ Sequence complete!</div>
+      </div>
+
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
