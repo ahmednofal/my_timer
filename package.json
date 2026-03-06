@@ -1,14 +1,35 @@
 {
   "name": "my_timer",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron:dev": "vite build && electron .",
+    "electron": "vite build && electron .",
+    "dist": "vite build && electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.nofal.interval-timer",
+    "productName": "Interval Timer",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "linux": {
+      "target": ["AppImage"],
+      "category": "Utility"
+    }
   },
   "devDependencies": {
+    "electron": "^40.7.0",
+    "electron-builder": "^26.8.1",
     "typescript": "~5.9.3",
     "vite": "^7.3.1"
   }

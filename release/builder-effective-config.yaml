@@ -1,0 +1,14 @@
+directories:
+  output: release
+  buildResources: build
+appId: com.nofal.interval-timer
+productName: Interval Timer
+files:
+  - filter:
+      - dist/**/*
+      - electron/**/*
+linux:
+  target:
+    - AppImage
+  category: Utility
+electronVersion: 40.7.0

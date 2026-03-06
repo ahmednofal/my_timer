@@ -9,6 +9,17 @@
   <body>
     <div id="app">
 
+      <!-- Drag bar (only visible in Electron) -->
+      <div class="drag-bar">
+        <div class="drag-bar-grip">
+          <span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <div class="drag-bar-actions">
+          <button id="minimize-btn" title="Minimize">–</button>
+          <button id="close-btn" class="close-btn" title="Hide to tray">✕</button>
+        </div>
+      </div>
+
       <!-- Header -->
       <div class="header">
         <h1>⏱ Interval Timer</h1>
@@ -82,6 +93,12 @@
       </div>
 
     </div>
+    <script>
+      // Detect Electron and add class for overlay styling
+      if (navigator.userAgent.toLowerCase().includes('electron')) {
+        document.documentElement.classList.add('electron-app');
+      }
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

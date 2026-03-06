@@ -200,3 +200,17 @@ document.addEventListener('keydown', (e) => {
       break;
   }
 });
+
+// ── Electron window controls ────────────────────────────────────────
+
+const isElectron = navigator.userAgent.toLowerCase().includes('electron');
+
+if (isElectron) {
+  document.getElementById('minimize-btn')?.addEventListener('click', () => {
+    window.close(); // In Electron with our config, close = hide to tray
+  });
+
+  document.getElementById('close-btn')?.addEventListener('click', () => {
+    window.close();
+  });
+}

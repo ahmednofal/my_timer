@@ -331,3 +331,123 @@ html, body {
     padding: 1.5rem 0.75rem;
   }
 }
+
+/* ── Electron overlay mode ──────────────────────────────────────────── */
+
+.electron-app html,
+.electron-app body {
+  background: transparent !important;
+}
+
+.electron-app #app {
+  background: rgba(15, 17, 23, 0.92);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  min-height: auto;
+  padding: 1rem;
+  gap: 1rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* Drag handle */
+.drag-bar {
+  display: none;
+  width: 100%;
+  height: 28px;
+  -webkit-app-region: drag;
+  cursor: grab;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.5rem;
+}
+
+.electron-app .drag-bar {
+  display: flex;
+}
+
+.drag-bar-grip {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.drag-bar-grip span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  opacity: 0.5;
+}
+
+.drag-bar-actions {
+  display: flex;
+  gap: 4px;
+  -webkit-app-region: no-drag;
+}
+
+.drag-bar-actions button {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+
+.drag-bar-actions button:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.drag-bar-actions .close-btn:hover {
+  background: var(--red);
+  color: #fff;
+}
+
+/* Compact overlay header */
+.electron-app .header h1 {
+  font-size: 1.1rem;
+}
+
+.electron-app .header p {
+  display: none;
+}
+
+/* Smaller input in overlay */
+.electron-app .dsl-input {
+  font-size: 0.9rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.electron-app .syntax-help {
+  display: none;
+}
+
+.electron-app .sound-test {
+  display: none;
+}
+
+/* Compact countdown */
+.electron-app .countdown {
+  font-size: 3.5rem;
+}
+
+.electron-app .timer-controls .btn {
+  min-width: 70px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+}
+
+/* All buttons in overlay are no-drag */
+.electron-app button,
+.electron-app input,
+.electron-app label {
+  -webkit-app-region: no-drag;
+}
