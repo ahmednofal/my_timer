@@ -213,4 +213,20 @@ if (isElectron) {
   document.getElementById('close-btn')?.addEventListener('click', () => {
     window.close();
   });
+
+  // Use IPC from main process for focus state.
+  // mouseenter/mouseleave are unreliable for initial state — if the mouse is
+  // outside when the window opens, it starts invisible on a dark desktop.
+  const setWindowFocus = (focused: boolean) => {
+    document.documentElement.classList.toggle('window-blurred', !focused);
+    // Also toggle mouse event pass-through: when not hovering, clicks go to apps below
+    (window as any).electronAPI?.setIgnoreMouseEvents(!focused);
+  };
+
+  // Assume focused until told otherwise (window just opened, user is looking at it)
+  setWindowFocus(true);
+
+  const appEl = document.getElementById('app');
+  appEl?.addEventListener('mouseenter', () => setWindowFocus(true));
+  appEl?.addEventListener('mouseleave', () => setWindowFocus(false));
 }

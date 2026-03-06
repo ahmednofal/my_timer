@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "electron:dev": "vite build && electron .",
     "electron": "vite build && electron .",
-    "dist": "vite build && electron-builder --linux"
+    "dist": "vite build && electron-builder --linux",
+    "gtk": "GDK_BACKEND=x11 python3 gtk_app/timer.py",
+    "gtk:dev": "vite build && GDK_BACKEND=x11 python3 gtk_app/timer.py"
   },
   "build": {
     "appId": "com.nofal.interval-timer",

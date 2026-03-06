@@ -337,16 +337,33 @@ html, body {
 .electron-app html,
 .electron-app body {
   background: transparent !important;
+  /* body must fill the whole screen (which is now the fullscreen window) */
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .electron-app #app {
+  /* Pin the widget to the top-right corner */
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 380px;
   background: rgba(15, 17, 23, 0.92);
   border-radius: 16px;
   border: 1px solid var(--border);
   min-height: auto;
-  padding: 1rem;
-  gap: 1rem;
+  padding: 0.75rem;
+  gap: 0.6rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  transition: opacity 0.3s ease;
+  /* Don't stretch to fill the viewport */
+  align-items: stretch;
+}
+
+/* Blurred (out-of-focus) state: only fade #app content, body stays opaque so WM keeps the window */
+.window-blurred.electron-app #app {
+  opacity: 0.72;
 }
 
 /* Drag handle */

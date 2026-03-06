@@ -1,30 +1,39 @@
-const { app, BrowserWindow, Tray, Menu, globalShortcut, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, globalShortcut, nativeImage, ipcMain } = require('electron');
 const path = require('path');
 
 let mainWindow = null;
 let tray = null;
 let isQuitting = false;
 
-const WIDTH = 420;
-const HEIGHT = 340;
-
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: WIDTH,
-    height: HEIGHT,
-    minWidth: 300,
-    minHeight: 200,
+    // Fullscreen transparent overlay — this is the only reliable way on Linux
+    // to keep a transparent frameless window alive when it loses focus.
+    // The widget is positioned in a corner purely via CSS.
+    fullscreen: false,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
-    resizable: true,
-    skipTaskbar: false,
-    hasShadow: true,
+    skipTaskbar: true,
+    resizable: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      preload: path.join(__dirname, 'preload.cjs'),
     },
   });
+
+  // Fill the whole screen
+  const { screen } = require('electron');
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  mainWindow.setSize(width, height);
+  mainWindow.setPosition(0, 0);
+
+  // Clicks pass through everywhere EXCEPT over the widget (renderer toggles this)
+  mainWindow.setIgnoreMouseEvents(true, { forward: true });
+
+  mainWindow.setAlwaysOnTop(true, 'screen-saver');
+  mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 
   // Load the built app or dev server
   const isDev = process.env.ELECTRON_DEV === 'true';
@@ -33,6 +42,11 @@ function createWindow() {
   } else {
     mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
   }
+
+  // Renderer tells us when the mouse is over the widget
+  ipcMain.on('set-ignore-mouse-events', (_e, ignore) => {
+    mainWindow.setIgnoreMouseEvents(ignore, { forward: true });
+  });
 
   // Don't close, just hide to tray
   mainWindow.on('close', (e) => {
@@ -60,15 +74,7 @@ function createTray() {
           mainWindow.hide();
         } else {
           mainWindow.show();
-          mainWindow.focus();
         }
-      },
-    },
-    {
-      label: 'Reset Position',
-      click: () => {
-        mainWindow.setPosition(100, 100);
-        mainWindow.show();
       },
     },
     { type: 'separator' },
@@ -88,7 +94,6 @@ function createTray() {
       mainWindow.hide();
     } else {
       mainWindow.show();
-      mainWindow.focus();
     }
   });
 }
