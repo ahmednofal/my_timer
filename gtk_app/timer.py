@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 GTK + WebKit2 overlay launcher for my_timer.
-Runs under XWayland (GDK_BACKEND=x11) so DOCK type hints work reliably.
+Runs under XWayland (GDK_BACKEND=x11) for reliable always-on-top behaviour.
 """
 
 import gi, os, json, cairo
@@ -72,8 +72,9 @@ class TimerOverlay(Gtk.Window):
         self.set_skip_taskbar_hint(True)
         self.set_skip_pager_hint(True)
 
-        # DOCK: WM never hides or minimizes this window type
-        self.set_type_hint(Gdk.WindowTypeHint.DOCK)
+        # UTILITY: floats above other windows, receives keyboard focus (unlike DOCK)
+        # keep_above + stick handles the always-on-top / all-workspaces part
+        self.set_type_hint(Gdk.WindowTypeHint.UTILITY)
         self.set_keep_above(True)
         self.stick()
         self.connect('realize', self._position_topright)
@@ -99,11 +100,23 @@ class TimerOverlay(Gtk.Window):
         self.add(self.webview)
 
         self.connect('realize', lambda *_: self._set_opacity(OPACITY_IDLE))
-        self.webview.connect('enter-notify-event', lambda *_: self._set_opacity(OPACITY_HOVER))
-        self.webview.connect('leave-notify-event', lambda *_: self._set_opacity(OPACITY_IDLE))
+        # Grab keyboard focus when the mouse enters the window
+        self.webview.connect('enter-notify-event', self._on_enter)
+        self.webview.connect('leave-notify-event', self._on_leave)
 
         self.connect('delete-event', lambda *_: Gtk.main_quit() or False)
         self.show_all()
+
+    def _on_enter(self, *_):
+        self._set_opacity(OPACITY_HOVER)
+        # Explicitly take keyboard focus — needed because UTILITY windows
+        # don't auto-focus on hover like normal windows do
+        gdk_win = self.get_window()
+        if gdk_win:
+            gdk_win.focus(Gdk.CURRENT_TIME)
+
+    def _on_leave(self, *_):
+        self._set_opacity(OPACITY_IDLE)
 
     def _set_opacity(self, value):
         self._current_opacity = value
@@ -133,10 +146,13 @@ class TimerOverlay(Gtk.Window):
         if action in ('hide', 'quit'):
             Gtk.main_quit()
         elif action == 'beginDrag':
-            self.begin_move_drag(1,
-                                 int(msg.get('sx', 0)),
-                                 int(msg.get('sy', 0)),
-                                 Gdk.CURRENT_TIME)
+            # Ask GDK for the real screen pointer position — JS screenX/Y is
+            # unreliable inside a WebView and Gdk.CURRENT_TIME (0) is rejected
+            # by the WM unless paired with real coordinates.
+            display = Gdk.Display.get_default()
+            seat = display.get_default_seat()
+            _screen, px, py = seat.get_pointer().get_position()
+            self.begin_move_drag(1, px, py, Gdk.CURRENT_TIME)
 
 
 if __name__ == '__main__':
