@@ -20,10 +20,13 @@ os.environ.setdefault('GDK_BACKEND', 'x11')
 
 from gi.repository import Gtk, Gdk, WebKit2
 
-WIDGET_WIDTH  = 390
-OPACITY_HOVER = 1.0
-OPACITY_IDLE  = 0.55
-MARGIN        = 16
+WIDGET_WIDTH   = 390
+# WebView is always allocated this height so WebKit's viewport is always
+# large — getBoundingClientRect().bottom is never viewport-clamped.
+WEBVIEW_HEIGHT = 1500
+OPACITY_HOVER  = 1.0
+OPACITY_IDLE   = 0.55
+MARGIN         = 16
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DIST_INDEX = os.path.abspath(os.path.join(SCRIPT_DIR, '..', 'dist', 'index.html'))
@@ -150,7 +153,15 @@ class TimerOverlay(Gtk.Window):
         ))
 
         self.webview.load_uri('file://' + DIST_INDEX)
-        self.add(self.webview)
+
+        # Put the WebView inside a Fixed container sized to WEBVIEW_HEIGHT.
+        # This gives WebKit a tall stable viewport so getBoundingClientRect()
+        # always reports true content height, not the smaller window height.
+        # The GTK window clips the Fixed widget's drawing to its actual size.
+        self.webview.set_size_request(WIDGET_WIDTH, WEBVIEW_HEIGHT)
+        fixed = Gtk.Fixed()
+        fixed.put(self.webview, 0, 0)
+        self.add(fixed)
 
         # Store the real GDK event timestamp from button-press so begin_move_drag
         # gets a valid time (Gdk.CURRENT_TIME=0 is rejected by most WMs)

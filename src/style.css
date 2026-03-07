@@ -349,12 +349,7 @@ html.electron-app body {
   overflow: hidden;
 }
 
-/* Give the html element a tall virtual canvas so WebKit always lays out
-   content at its natural size regardless of the current GTK window height.
-   Without this, getBoundingClientRect().bottom clamps to the viewport. */
-html.electron-app {
-  min-height: 1200px;
-}
+
 
 .electron-app #app {
   width: 380px;
