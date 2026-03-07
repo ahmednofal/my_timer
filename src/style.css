@@ -178,11 +178,16 @@ html, body {
   display: none;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .timer-display.visible {
   display: flex;
+}
+
+/* Compact timer in electron */
+.electron-app .timer-display {
+  gap: 0.6rem;
 }
 
 .countdown {
@@ -334,31 +339,35 @@ html, body {
 
 /* ── Electron overlay mode ──────────────────────────────────────────── */
 
-.electron-app html,
-.electron-app body {
+html.electron-app,
+html.electron-app body {
   background: transparent !important;
-  /* body must fill the whole screen (which is now the fullscreen window) */
-  width: 100vw;
-  height: 100vh;
+  width: 380px;
+  height: auto;
+  min-height: 0;
+  /* Hide scrollbars — the GTK window resizes to content so nothing is clipped */
   overflow: hidden;
 }
 
+/* Give the html element a tall virtual canvas so WebKit always lays out
+   content at its natural size regardless of the current GTK window height.
+   Without this, getBoundingClientRect().bottom clamps to the viewport. */
+html.electron-app {
+  min-height: 1200px;
+}
+
 .electron-app #app {
-  /* Pin the widget to the top-right corner */
-  position: fixed;
-  top: 16px;
-  right: 16px;
   width: 380px;
   background: rgba(15, 17, 23, 0.92);
   border-radius: 16px;
   border: 1px solid var(--border);
-  min-height: auto;
-  padding: 0.75rem;
-  gap: 0.6rem;
+  min-height: 0;        /* override the 100vh base rule */
+  padding: 0.5rem;
+  gap: 0.4rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   transition: opacity 0.3s ease;
-  /* Don't stretch to fill the viewport */
   align-items: stretch;
+  overflow: visible;
 }
 
 /* Blurred (out-of-focus) state: only fade #app content, body stays opaque so WM keeps the window */
@@ -370,7 +379,7 @@ html, body {
 .drag-bar {
   display: none;
   width: 100%;
-  height: 28px;
+  height: 44px;
   -webkit-app-region: drag;
   cursor: grab;
   align-items: center;
@@ -467,4 +476,63 @@ html, body {
 .electron-app input,
 .electron-app label {
   -webkit-app-region: no-drag;
+}
+
+/* ── Active timer layout: hide input, show only timer ────────────────── */
+
+/* Hide entire input section when timer is running */
+.electron-app #app:has(.timer-display.visible) .header {
+  display: none;
+}
+
+.electron-app #app:has(.timer-display.visible) .input-section {
+  display: none;
+}
+
+/* Timer display fills the full width */
+.electron-app #app:has(.timer-display.visible) .timer-display {
+  width: 100%;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Step info smaller */
+.electron-app #app:has(.timer-display.visible) .step-label {
+  font-size: 0.82rem;
+}
+
+.electron-app #app:has(.timer-display.visible) .loop-info {
+  font-size: 0.72rem;
+}
+
+/* Countdown — readable but not enormous */
+.electron-app #app:has(.timer-display.visible) .countdown {
+  font-size: 2.4rem;
+  line-height: 1.1;
+}
+
+/* Step pills — thinner */
+.electron-app #app:has(.timer-display.visible) .step-pill {
+  height: 5px;
+}
+
+/* Progress bar — slimmer */
+.electron-app #app:has(.timer-display.visible) .progress-bar {
+  height: 4px;
+}
+
+/* Controls — compact */
+.electron-app #app:has(.timer-display.visible) .timer-controls {
+  gap: 0.4rem;
+}
+
+.electron-app #app:has(.timer-display.visible) .timer-controls .btn {
+  min-width: 0;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.78rem;
+}
+
+/* Finished msg */
+.electron-app #app:has(.timer-display.visible) .finished-msg {
+  font-size: 0.95rem;
 }

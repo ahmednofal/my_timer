@@ -21,7 +21,6 @@ os.environ.setdefault('GDK_BACKEND', 'x11')
 from gi.repository import Gtk, Gdk, WebKit2
 
 WIDGET_WIDTH  = 390
-WIDGET_HEIGHT = 560
 OPACITY_HOVER = 1.0
 OPACITY_IDLE  = 0.55
 MARGIN        = 16
@@ -36,12 +35,64 @@ GLUE_JS = """
   const bridge = (msg) =>
     window.webkit.messageHandlers.gtkBridge.postMessage(JSON.stringify(msg));
 
-  document.addEventListener('DOMContentLoaded', () => {
+  // Debounced height reporter.
+  // Uses #app.offsetHeight — the flex container's natural content height.
+  // This is completely independent of the WebView viewport size, so it
+  // never clamps or grows spuriously the way documentElement.scrollHeight does.
+  // requestAnimationFrame ensures we measure AFTER the browser has reflowed.
+  let _rtimer = null;
+  let _lastH  = 0;
+  const reportHeight = () => {
+    clearTimeout(_rtimer);
+    _rtimer = setTimeout(() => {
+      _rtimer = null;
+      requestAnimationFrame(() => {
+        const app = document.getElementById('app');
+        if (!app) return;
+        // getBoundingClientRect().bottom = distance from top of viewport to
+        // the bottom edge of #app. Unlike offsetHeight, this is NOT clamped
+        // to the viewport — it reports the true content bottom even when
+        // content overflows the current GTK window height.
+        const h = Math.ceil(app.getBoundingClientRect().bottom);
+        if (h > 0 && h !== _lastH) {
+          _lastH = h;
+          bridge({ action: 'resize', height: h });
+        }
+      });
+    }, 30); // 30ms debounce — lets the reflow settle after DOM mutations
+  };
+
+  // GLUE_JS is injected at END (after document finishes loading), so
+  // DOMContentLoaded has already fired — the listener would never run.
+  // Use a readyState guard to call setup() immediately if already loaded.
+  function _setup() {
     document.getElementById('close-btn')
       ?.addEventListener('click', () => bridge({ action: 'quit' }));
     document.getElementById('minimize-btn')
       ?.addEventListener('click', () => bridge({ action: 'quit' }));
-  });
+
+    // MutationObserver: catches classList changes (timer start/stop),
+    // childList/characterData (loop counter text appearing and updating).
+    const mo = new MutationObserver(reportHeight);
+    mo.observe(document.body, {
+      childList: true, subtree: true,
+      characterData: true, attributes: true,
+    });
+
+    // ResizeObserver as belt-and-suspenders backup
+    const app = document.getElementById('app');
+    if (app && window.ResizeObserver) {
+      new ResizeObserver(reportHeight).observe(app);
+    }
+
+    reportHeight(); // initial measure
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _setup);
+  } else {
+    _setup(); // already loaded — call immediately
+  }
 
   document.addEventListener('mousedown', (e) => {
     const bar = e.target.closest('.drag-bar');
@@ -66,7 +117,7 @@ class TimerOverlay(Gtk.Window):
         self.set_app_paintable(True)
         self.connect('draw', self._on_draw)
 
-        self.set_default_size(WIDGET_WIDTH, WIDGET_HEIGHT)
+        self.set_default_size(WIDGET_WIDTH, -1)  # -1 = natural height from content
         self.set_decorated(False)
         self.set_resizable(False)
         self.set_skip_taskbar_hint(True)
@@ -86,6 +137,8 @@ class TimerOverlay(Gtk.Window):
         s = self.webview.get_settings()
         s.set_allow_file_access_from_file_urls(True)
         s.set_allow_universal_access_from_file_urls(True)
+        s.set_enable_webaudio(True)
+        s.set_media_playback_requires_user_gesture(False)
 
         ucm = self.webview.get_user_content_manager()
         ucm.register_script_message_handler('gtkBridge')
@@ -99,6 +152,11 @@ class TimerOverlay(Gtk.Window):
         self.webview.load_uri('file://' + DIST_INDEX)
         self.add(self.webview)
 
+        # Store the real GDK event timestamp from button-press so begin_move_drag
+        # gets a valid time (Gdk.CURRENT_TIME=0 is rejected by most WMs)
+        self._last_press_time = Gdk.CURRENT_TIME
+        self.webview.connect('button-press-event', self._on_button_press)
+
         self.connect('realize', lambda *_: self._set_opacity(OPACITY_IDLE))
         # Grab keyboard focus when the mouse enters the window
         self.webview.connect('enter-notify-event', self._on_enter)
@@ -106,6 +164,10 @@ class TimerOverlay(Gtk.Window):
 
         self.connect('delete-event', lambda *_: Gtk.main_quit() or False)
         self.show_all()
+
+    def _on_button_press(self, widget, event):
+        self._last_press_time = event.time
+        return False  # don't consume the event
 
     def _on_enter(self, *_):
         self._set_opacity(OPACITY_HOVER)
@@ -145,6 +207,10 @@ class TimerOverlay(Gtk.Window):
         action = msg.get('action')
         if action in ('hide', 'quit'):
             Gtk.main_quit()
+        elif action == 'resize':
+            h = int(msg.get('height', 0))
+            if h > 0:
+                self.resize(WIDGET_WIDTH, h + 20)  # 20px buffer for border/rounding
         elif action == 'beginDrag':
             # Ask GDK for the real screen pointer position — JS screenX/Y is
             # unreliable inside a WebView and Gdk.CURRENT_TIME (0) is rejected
