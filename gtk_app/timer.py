@@ -18,11 +18,12 @@ for _v in ('4.1', '4.0'):
 # Force X11 backend so DOCK/keep-above hints work (XWayland on Wayland desktops)
 os.environ.setdefault('GDK_BACKEND', 'x11')
 
-from gi.repository import Gtk, Gdk, WebKit2
+from gi.repository import Gtk, Gdk, GLib, WebKit2
 
 WIDGET_WIDTH   = 390
-# WebView is always allocated this height so WebKit's viewport is always
-# large — getBoundingClientRect().bottom is never viewport-clamped.
+# WebView is always allocated WEBVIEW_HEIGHT so WebKit's viewport is large
+# and app.scrollHeight always reflects true content height, not the
+# smaller window height.
 WEBVIEW_HEIGHT = 1500
 OPACITY_HOVER  = 1.0
 OPACITY_IDLE   = 0.55
@@ -52,11 +53,11 @@ GLUE_JS = """
       requestAnimationFrame(() => {
         const app = document.getElementById('app');
         if (!app) return;
-        // getBoundingClientRect().bottom = distance from top of viewport to
-        // the bottom edge of #app. Unlike offsetHeight, this is NOT clamped
-        // to the viewport — it reports the true content bottom even when
-        // content overflows the current GTK window height.
-        const h = Math.ceil(app.getBoundingClientRect().bottom);
+        // scrollHeight = intrinsic content height of #app regardless of
+        // viewport size. Since .electron-app #app has min-height:0 and
+        // height:auto, this is purely the sum of children — never clamped
+        // to the viewport or window size.
+        const h = Math.ceil(app.scrollHeight);
         if (h > 0 && h !== _lastH) {
           _lastH = h;
           bridge({ action: 'resize', height: h });
@@ -154,14 +155,22 @@ class TimerOverlay(Gtk.Window):
 
         self.webview.load_uri('file://' + DIST_INDEX)
 
-        # Put the WebView inside a Fixed container sized to WEBVIEW_HEIGHT.
-        # This gives WebKit a tall stable viewport so getBoundingClientRect()
-        # always reports true content height, not the smaller window height.
-        # The GTK window clips the Fixed widget's drawing to its actual size.
+        # Gtk.Fixed allocates the WebView at WEBVIEW_HEIGHT so WebKit always
+        # has a large stable viewport — app.scrollHeight is never clamped.
+        # The window itself is resized to the content height; the invisible
+        # part of the WebView is clipped via input_shape (see below).
         self.webview.set_size_request(WIDGET_WIDTH, WEBVIEW_HEIGHT)
         fixed = Gtk.Fixed()
         fixed.put(self.webview, 0, 0)
         self.add(fixed)
+
+        # After the WebView's own GDK/X11 window is created, restrict its
+        # input region to the current window height. Without this, the 1500px
+        # X11 sub-window eats mouse events below the visible widget.
+        # Note: input_shape on the *top-level* window does NOT cascade to
+        # child X11 windows — we must clip the WebView's window directly.
+        self.webview.connect('realize', lambda *_:
+            GLib.idle_add(self._clip_webview_input, self.get_size()[1]))
 
         # Store the real GDK event timestamp from button-press so begin_move_drag
         # gets a valid time (Gdk.CURRENT_TIME=0 is rejected by most WMs)
@@ -175,6 +184,22 @@ class TimerOverlay(Gtk.Window):
 
         self.connect('delete-event', lambda *_: Gtk.main_quit() or False)
         self.show_all()
+
+    def _clip_webview_input(self, h):
+        """Clip input regions on BOTH the top-level window AND the WebView's
+        own X11 sub-window to height h.
+        - The top-level window is 1500px tall (Gtk.Fixed child size) and
+          intercepts clicks below the content unless clipped.
+        - The WebView sub-window also needs clipping to stop hover/enter events.
+        Both must be clipped; clipping only one leaves the other still blocking."""
+        region = cairo.Region(cairo.RectangleInt(0, 0, WIDGET_WIDTH, h))
+        top_win = self.get_window()
+        if top_win:
+            top_win.input_shape_combine_region(region, 0, 0)
+        wv_win = self.webview.get_window()
+        if wv_win:
+            wv_win.input_shape_combine_region(region, 0, 0)
+        return False  # remove from GLib idle queue
 
     def _on_button_press(self, widget, event):
         self._last_press_time = event.time
@@ -221,7 +246,9 @@ class TimerOverlay(Gtk.Window):
         elif action == 'resize':
             h = int(msg.get('height', 0))
             if h > 0:
-                self.resize(WIDGET_WIDTH, h + 20)  # 20px buffer for border/rounding
+                new_h = h + 20
+                self.resize(WIDGET_WIDTH, new_h)
+                GLib.idle_add(self._clip_webview_input, new_h)
         elif action == 'beginDrag':
             # Ask GDK for the real screen pointer position — JS screenX/Y is
             # unreliable inside a WebView and Gdk.CURRENT_TIME (0) is rejected
