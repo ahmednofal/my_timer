@@ -10,10 +10,14 @@
     "preview": "vite preview",
     "electron:dev": "vite build && electron .",
     "electron": "vite build && electron .",
-    "dist": "vite build && electron-builder --linux",
+    "dist": "npm run dist:electron",
+    "dist:electron": "vite build && electron-builder --linux",
+    "dist:gtk": "vite build && bash scripts/build-gtk-appimage.sh",
     "gtk": "GDK_BACKEND=x11 python3 gtk_app/timer.py",
     "gtk:dev": "vite build && GDK_BACKEND=x11 python3 gtk_app/timer.py"
   },
+  "description": "Interval Timer Application",
+  "author": "Nofal",
   "build": {
     "appId": "com.nofal.interval-timer",
     "productName": "Interval Timer",
@@ -25,8 +29,19 @@
       "electron/**/*"
     ],
     "linux": {
-      "target": ["AppImage"],
-      "category": "Utility"
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        }
+      ],
+      "category": "Utility",
+      "executableName": "interval-timer",
+      "executableArgs": [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage"
+      ]
     }
   },
   "devDependencies": {

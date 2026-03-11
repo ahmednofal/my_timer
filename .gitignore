@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local packaging outputs
+build/
+release/*.AppImage
+release/builder-*.yaml
+release/builder-*.yml
+release/latest-*.yml
+release/linux-unpacked/
