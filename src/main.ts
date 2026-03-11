@@ -207,26 +207,34 @@ const isElectron = navigator.userAgent.toLowerCase().includes('electron');
 
 if (isElectron) {
   document.getElementById('minimize-btn')?.addEventListener('click', () => {
-    window.close(); // In Electron with our config, close = hide to tray
+    window.close();
   });
-
   document.getElementById('close-btn')?.addEventListener('click', () => {
     window.close();
   });
 
-  // Use IPC from main process for focus state.
-  // mouseenter/mouseleave are unreliable for initial state — if the mouse is
-  // outside when the window opens, it starts invisible on a dark desktop.
-  const setWindowFocus = (focused: boolean) => {
-    document.documentElement.classList.toggle('window-blurred', !focused);
-    // Also toggle mouse event pass-through: when not hovering, clicks go to apps below
-    (window as any).electronAPI?.setIgnoreMouseEvents(!focused);
-  };
+  // Opacity: dim when window loses focus
+  window.addEventListener('focus', () =>
+    document.documentElement.classList.remove('window-blurred'));
+  window.addEventListener('blur', () =>
+    document.documentElement.classList.add('window-blurred'));
 
-  // Assume focused until told otherwise (window just opened, user is looking at it)
-  setWindowFocus(true);
-
+  // Resize window to content height via IPC whenever layout changes
   const appEl = document.getElementById('app');
-  appEl?.addEventListener('mouseenter', () => setWindowFocus(true));
-  appEl?.addEventListener('mouseleave', () => setWindowFocus(false));
+  let _lastH = 0;
+  const reportHeight = () => {
+    if (!appEl) return;
+    const h = Math.ceil(appEl.scrollHeight);
+    if (h > 0 && h !== _lastH) {
+      _lastH = h;
+      (window as any).electronAPI?.resizeWindow(h);
+    }
+  };
+  if (appEl) {
+    new MutationObserver(reportHeight).observe(appEl, {
+      childList: true, subtree: true, characterData: true, attributes: true,
+    });
+    new ResizeObserver(reportHeight).observe(appEl);
+    reportHeight();
+  }
 }

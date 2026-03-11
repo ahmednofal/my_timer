@@ -9,6 +9,13 @@ files:
       - electron/**/*
 linux:
   target:
-    - AppImage
+    - target: AppImage
+      arch:
+        - x64
   category: Utility
+  executableName: interval-timer
+  executableArgs:
+    - '--no-sandbox'
+    - '--disable-setuid-sandbox'
+    - '--disable-dev-shm-usage'
 electronVersion: 40.7.0
