@@ -37,8 +37,19 @@ jobs:
       - name: Show release files
         run: ls -lh release/
 
+      - name: Create distributable archive (preserves +x)
+        run: |
+          APPIMAGE_PATH=$(ls release/Interval\ Timer\ GTK-*-x86_64.AppImage | head -n 1)
+          APPIMAGE_FILE=$(basename "$APPIMAGE_PATH")
+          tar -C release -czf "release/${APPIMAGE_FILE}.tar.gz" "$APPIMAGE_FILE"
+          sha256sum "$APPIMAGE_PATH" "release/${APPIMAGE_FILE}.tar.gz" > release/SHA256SUMS.txt
+          ls -lh release/
+
       - name: Upload AppImage to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: "release/Interval Timer GTK-*-x86_64.AppImage"
+          files: |
+            release/Interval Timer GTK-*-x86_64.AppImage
+            release/Interval Timer GTK-*-x86_64.AppImage.tar.gz
+            release/SHA256SUMS.txt
           generate_release_notes: true
