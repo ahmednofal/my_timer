@@ -62,3 +62,8 @@ jobs:
             release/Interval Timer GTK-*-x86_64.AppImage.tar.gz
             release/SHA256SUMS.txt
           generate_release_notes: true
+          # Tags with a suffix (e.g. v1.1.0-tasks.1) come from feature release
+          # branches: publish them as separate pre-releases so the main
+          # branch's release stays "Latest".
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          make_latest: ${{ !contains(github.ref_name, '-') }}

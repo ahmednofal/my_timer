@@ -1,7 +1,7 @@
 {
   "name": "my_timer",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0-tasks.1",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -32,7 +32,9 @@
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "category": "Utility",
