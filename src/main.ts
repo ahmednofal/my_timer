@@ -3,6 +3,7 @@ import { parseIntervalDSL } from './parser/intervalParser';
 import { TimerEngine } from './engine/timerEngine';
 import { formatDuration } from './models/interval';
 import { playStepBeep, playCompleteBeep } from './audio/beep';
+import { initTaskPanel } from './tasks/taskPanel';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -31,6 +32,8 @@ const $skipBtn = document.getElementById('skip-btn') as HTMLButtonElement;
 // ── Engine ───────────────────────────────────────────────────────────
 
 const engine = new TimerEngine();
+
+initTaskPanel();
 
 // ── Restore saved state ──────────────────────────────────────────────
 
@@ -181,8 +184,9 @@ document.getElementById('test-complete-sound')!.addEventListener('click', () => 
 // ── Keyboard shortcuts ──────────────────────────────────────────────
 
 document.addEventListener('keydown', (e) => {
-  // Don't intercept when typing in input
-  if (document.activeElement === $dslInput) return;
+  // Don't intercept when typing in any text input (DSL or task fields)
+  const target = e.target as HTMLElement;
+  if (target instanceof HTMLInputElement && target.type === 'text') return;
 
   switch (e.code) {
     case 'Space':
@@ -219,15 +223,19 @@ if (isElectron) {
   window.addEventListener('blur', () =>
     document.documentElement.classList.add('window-blurred'));
 
-  // Resize window to content height via IPC whenever layout changes
+  // Resize window to content size via IPC whenever layout changes
+  // (width changes when the tasks panel is toggled)
   const appEl = document.getElementById('app');
   let _lastH = 0;
+  let _lastW = 0;
   const reportHeight = () => {
     if (!appEl) return;
     const h = Math.ceil(appEl.scrollHeight);
-    if (h > 0 && h !== _lastH) {
+    const w = Math.ceil(appEl.offsetWidth);
+    if (h > 0 && (h !== _lastH || w !== _lastW)) {
       _lastH = h;
-      (window as any).electronAPI?.resizeWindow(h);
+      _lastW = w;
+      (window as any).electronAPI?.resizeWindow(h, w);
     }
   };
   if (appEl) {

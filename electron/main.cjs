@@ -7,6 +7,7 @@ app.commandLine.appendSwitch('disable-gpu-sandbox');
 app.commandLine.appendSwitch('disable-dev-shm-usage');
 
 const WIDGET_WIDTH = 410; // slightly wider than CSS 380px to account for shadows
+const WIDTH_PAD = WIDGET_WIDTH - 380; // extra window width beyond the CSS #app width
 const MARGIN = 16;
 
 let mainWindow = null;
@@ -53,11 +54,18 @@ function createWindow() {
   mainWindow.setAlwaysOnTop(true, 'screen-saver');
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 
-  // Renderer reports content height whenever layout changes
-  ipcMain.on('resize-window', (_e, height) => {
-    if (mainWindow && height > 0) {
-      mainWindow.setSize(WIDGET_WIDTH, height + 20);
-    }
+  // Renderer reports content size whenever layout changes. Width grows when
+  // the tasks panel opens; keep the right edge anchored so it opens leftward.
+  ipcMain.on('resize-window', (_e, height, width) => {
+    if (!mainWindow || !(height > 0)) return;
+    const newWidth = width > 0 ? width + WIDTH_PAD : WIDGET_WIDTH;
+    const bounds = mainWindow.getBounds();
+    mainWindow.setBounds({
+      x: bounds.x + bounds.width - newWidth,
+      y: bounds.y,
+      width: newWidth,
+      height: height + 20,
+    });
   });
 
   const isDev = process.env.ELECTRON_DEV === 'true';

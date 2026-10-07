@@ -177,6 +177,25 @@ export class TimerEngine {
     this.advanceStep();
   }
 
+  /**
+   * Append a step to the end of an active (running/paused) run without
+   * resetting progress. When idle or finished, callers should load() instead.
+   */
+  appendStep(step: IntervalStep): void {
+    if (this._state !== 'running' && this._state !== 'paused') return;
+    this.steps.push(step);
+  }
+
+  /**
+   * Remove an upcoming step from an active run. Only steps after the current
+   * one can be removed; done and current steps are left alone.
+   */
+  removeStep(index: number): void {
+    if (this._state !== 'running' && this._state !== 'paused') return;
+    if (index <= this.stepIndex || index >= this.steps.length) return;
+    this.steps.splice(index, 1);
+  }
+
   // ── Internal ───────────────────────────────────────────────────────
 
   private scheduleInterval(): void {

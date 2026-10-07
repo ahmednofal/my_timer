@@ -14,11 +14,49 @@
         <div class="drag-bar-grip">
           <span></span><span></span><span></span><span></span><span></span><span></span>
         </div>
+        <div id="tasks-mini" class="tasks-mini"></div>
         <div class="drag-bar-actions">
+          <button id="tasks-toggle" class="tasks-toggle" title="Timed tasks">☰</button>
           <button id="minimize-btn" title="Minimize">–</button>
           <button id="close-btn" class="close-btn" title="Hide to tray">✕</button>
         </div>
       </div>
+
+      <div class="app-body">
+
+      <!-- Timed tasks side panel -->
+      <aside id="tasks-panel" class="tasks-panel">
+        <div class="tasks-header">
+          <h2>Tasks</h2>
+          <span id="tasks-total" class="tasks-total"></span>
+        </div>
+
+        <div id="tasks-now" class="tasks-now">
+          <div id="tasks-now-name" class="tasks-now-name"></div>
+          <div id="tasks-now-time" class="tasks-now-time">00:00</div>
+          <div class="progress-bar">
+            <div id="tasks-now-fill" class="progress-bar-fill" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <form id="task-form" class="task-form" autocomplete="off">
+          <input id="task-name" class="task-input task-input-name" type="text" placeholder="Task name" spellcheck="false" />
+          <input id="task-duration" class="task-input task-input-duration" type="text" placeholder="25" spellcheck="false" title="Minutes, M:SS, 90s or 1h" />
+          <button type="submit" class="btn btn-primary btn-small" title="Add task">+</button>
+        </form>
+        <div id="task-error" class="error-msg"></div>
+
+        <ol id="task-list" class="task-list"></ol>
+
+        <div class="tasks-controls">
+          <button id="tasks-play-btn" class="btn btn-primary btn-small">▶ Start</button>
+          <button id="tasks-skip-btn" class="btn btn-secondary btn-small">⏭ Skip</button>
+          <button id="tasks-reset-btn" class="btn btn-secondary btn-small">⏹ Reset</button>
+          <button id="tasks-clear-btn" class="btn btn-secondary btn-small" title="Remove all tasks">Clear</button>
+        </div>
+      </aside>
+
+      <div class="main-col">
 
       <!-- Header -->
       <div class="header">
@@ -91,6 +129,9 @@
 
         <div id="finished-msg" class="finished-msg">✓ Sequence complete!</div>
       </div>
+
+      </div><!-- /.main-col -->
+      </div><!-- /.app-body -->
 
     </div>
     <script>

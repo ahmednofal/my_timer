@@ -37,6 +37,26 @@ html, body {
   gap: 2rem;
 }
 
+/* ── Layout: tasks panel beside the main column ─────────────────────── */
+
+.app-body {
+  width: 100%;
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.main-col {
+  flex: 1 1 400px;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
 /* ── Header ─────────────────────────────────────────────────────────── */
 
 .header {
@@ -147,6 +167,17 @@ html, body {
 
 .btn-secondary:hover {
   background: var(--border);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  transform: none;
+}
+
+.btn-small {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
 }
 
 .error-msg {
@@ -297,6 +328,242 @@ html, body {
   min-width: 100px;
 }
 
+/* ── Timed tasks panel ──────────────────────────────────────────────── */
+
+.tasks-panel {
+  flex: 0 0 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+
+.tasks-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.tasks-header h2 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+
+.tasks-total {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.tasks-now {
+  display: none;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.5rem 0.6rem;
+  background: var(--surface-2);
+  border-radius: 8px;
+}
+
+.tasks-now.visible {
+  display: flex;
+}
+
+.tasks-now-name {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tasks-now-time {
+  font-family: var(--font-mono);
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1.1;
+  transition: color 0.3s;
+}
+
+.tasks-now-time.warning {
+  color: var(--orange);
+}
+
+.tasks-now-time.critical {
+  color: var(--red);
+}
+
+.tasks-now .progress-bar {
+  height: 4px;
+}
+
+.task-form {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.task-input {
+  min-width: 0;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.82rem;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: none;
+}
+
+.task-input:focus {
+  border-color: var(--accent);
+}
+
+.task-input::placeholder {
+  color: var(--text-dim);
+}
+
+.task-input-name {
+  flex: 1;
+}
+
+.task-input-duration {
+  width: 4.2rem;
+  font-family: var(--font-mono);
+  text-align: right;
+}
+
+.task-form .btn {
+  padding: 0.35rem 0.65rem;
+}
+
+.tasks-panel .error-msg {
+  font-size: 0.72rem;
+  min-height: 0;
+}
+
+.task-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.4rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+
+.task-item:hover {
+  background: var(--surface-2);
+}
+
+.task-item.active {
+  background: var(--accent-glow);
+}
+
+.task-item.done {
+  color: var(--text-dim);
+}
+
+.task-item.done .task-name {
+  text-decoration: line-through;
+}
+
+.task-mark {
+  width: 1.1rem;
+  flex-shrink: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.task-item.active .task-mark {
+  color: var(--accent);
+}
+
+.task-item.done .task-mark {
+  color: var(--green);
+}
+
+.task-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-time {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.task-item.active .task-time {
+  color: var(--text);
+}
+
+.task-del {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 9px;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.task-item:hover .task-del {
+  opacity: 1;
+}
+
+.task-del:hover {
+  background: var(--red);
+  color: #fff;
+}
+
+.task-empty {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  padding: 0.5rem 0.4rem;
+}
+
+.tasks-controls {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.tasks-controls .btn {
+  flex: 1;
+  white-space: nowrap;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+.tasks-panel.flash {
+  animation: flash-panel 0.6s ease-out;
+}
+
+@keyframes flash-panel {
+  0% { background-color: var(--accent); }
+  100% { background-color: var(--surface); }
+}
+
 /* ── Flash animation on step change ─────────────────────────────────── */
 
 .flash {
@@ -342,7 +609,8 @@ html, body {
 html.electron-app,
 html.electron-app body {
   background: transparent !important;
-  width: 380px;
+  /* #app sets its own width (wider when the tasks panel is open) */
+  width: auto;
   height: auto;
   min-height: 0;
   /* Hide scrollbars — the GTK window resizes to content so nothing is clipped */
@@ -363,6 +631,36 @@ html.electron-app body {
   transition: opacity 0.3s ease;
   align-items: stretch;
   overflow: visible;
+}
+
+/* Tasks panel opens to the left of the timer; the window widens to fit */
+.electron-app #app.tasks-open {
+  width: 680px;
+}
+
+.electron-app .app-body {
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: stretch;
+}
+
+.electron-app .main-col {
+  flex: 0 0 362px;   /* 380px − 2×0.5rem padding − 2×1px border */
+  max-width: none;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+
+.electron-app .tasks-panel {
+  display: none;
+  flex: 1 1 auto;
+  padding: 0.5rem;
+  background: var(--surface);
+}
+
+.electron-app #app.tasks-open .tasks-panel {
+  display: flex;
 }
 
 /* Blurred (out-of-focus) state: only fade #app content, body stays opaque so WM keeps the window */
@@ -398,6 +696,29 @@ html.electron-app body {
   border-radius: 50%;
   background: var(--text-dim);
   opacity: 0.5;
+}
+
+.tasks-mini {
+  display: none;
+  flex: 1;
+  min-width: 0;
+  margin: 0 0.5rem;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tasks-mini.visible {
+  display: block;
+}
+
+.drag-bar-actions .tasks-toggle.active {
+  background: var(--accent);
+  color: #fff;
 }
 
 .drag-bar-actions {

@@ -21,6 +21,8 @@ os.environ.setdefault('GDK_BACKEND', 'x11')
 from gi.repository import Gtk, Gdk, GLib, WebKit2
 
 WIDGET_WIDTH   = 390
+# Extra window width beyond the CSS #app width (380px), for shadows.
+WIDTH_PAD      = WIDGET_WIDTH - 380
 # WebView is always allocated WEBVIEW_HEIGHT so WebKit's viewport is large
 # and app.scrollHeight always reflects true content height, not the
 # smaller window height.
@@ -46,6 +48,7 @@ GLUE_JS = """
   // requestAnimationFrame ensures we measure AFTER the browser has reflowed.
   let _rtimer = null;
   let _lastH  = 0;
+  let _lastW  = 0;
   const reportHeight = () => {
     clearTimeout(_rtimer);
     _rtimer = setTimeout(() => {
@@ -58,9 +61,12 @@ GLUE_JS = """
         // height:auto, this is purely the sum of children — never clamped
         // to the viewport or window size.
         const h = Math.ceil(app.scrollHeight);
-        if (h > 0 && h !== _lastH) {
+        // Width changes when the tasks side panel is toggled.
+        const w = Math.ceil(app.offsetWidth);
+        if (h > 0 && (h !== _lastH || w !== _lastW)) {
           _lastH = h;
-          bridge({ action: 'resize', height: h });
+          _lastW = w;
+          bridge({ action: 'resize', height: h, width: w });
         }
       });
     }, 30); // 30ms debounce — lets the reflow settle after DOM mutations
@@ -112,6 +118,7 @@ class TimerOverlay(Gtk.Window):
     def __init__(self):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self._current_opacity = OPACITY_IDLE
+        self._width = WIDGET_WIDTH
 
         # RGBA visual for transparency
         screen = self.get_screen()
@@ -170,7 +177,7 @@ class TimerOverlay(Gtk.Window):
         # Note: input_shape on the *top-level* window does NOT cascade to
         # child X11 windows — we must clip the WebView's window directly.
         self.webview.connect('realize', lambda *_:
-            GLib.idle_add(self._clip_webview_input, self.get_size()[1]))
+            GLib.idle_add(self._clip_webview_input, *self.get_size()))
 
         # Store the real GDK event timestamp from button-press so begin_move_drag
         # gets a valid time (Gdk.CURRENT_TIME=0 is rejected by most WMs)
@@ -185,14 +192,14 @@ class TimerOverlay(Gtk.Window):
         self.connect('delete-event', lambda *_: Gtk.main_quit() or False)
         self.show_all()
 
-    def _clip_webview_input(self, h):
+    def _clip_webview_input(self, w, h):
         """Clip input regions on BOTH the top-level window AND the WebView's
         own X11 sub-window to height h.
         - The top-level window is 1500px tall (Gtk.Fixed child size) and
           intercepts clicks below the content unless clipped.
         - The WebView sub-window also needs clipping to stop hover/enter events.
         Both must be clipped; clipping only one leaves the other still blocking."""
-        region = cairo.Region(cairo.RectangleInt(0, 0, WIDGET_WIDTH, h))
+        region = cairo.Region(cairo.RectangleInt(0, 0, w, h))
         top_win = self.get_window()
         if top_win:
             top_win.input_shape_combine_region(region, 0, 0)
@@ -245,10 +252,19 @@ class TimerOverlay(Gtk.Window):
             Gtk.main_quit()
         elif action == 'resize':
             h = int(msg.get('height', 0))
+            w = int(msg.get('width', 0))
             if h > 0:
                 new_h = h + 20
-                self.resize(WIDGET_WIDTH, new_h)
-                GLib.idle_add(self._clip_webview_input, new_h)
+                new_w = w + WIDTH_PAD if w > 0 else WIDGET_WIDTH
+                if new_w != self._width:
+                    # Keep the right edge anchored so the tasks panel opens
+                    # leftward (the window sits in the top-right corner).
+                    x, y = self.get_position()
+                    self.webview.set_size_request(new_w, WEBVIEW_HEIGHT)
+                    self.move(x + self._width - new_w, y)
+                    self._width = new_w
+                self.resize(new_w, new_h)
+                GLib.idle_add(self._clip_webview_input, new_w, new_h)
         elif action == 'beginDrag':
             # Ask GDK for the real screen pointer position — JS screenX/Y is
             # unreliable inside a WebView and Gdk.CURRENT_TIME (0) is rejected
