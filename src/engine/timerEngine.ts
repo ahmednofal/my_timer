@@ -196,6 +196,20 @@ export class TimerEngine {
     this.steps.splice(index, 1);
   }
 
+  /**
+   * Move an upcoming step to another upcoming position in an active run.
+   * Returns false (and changes nothing) if either position is done or current.
+   */
+  moveStep(from: number, to: number): boolean {
+    if (this._state !== 'running' && this._state !== 'paused') return false;
+    const min = this.stepIndex + 1;
+    const max = this.steps.length - 1;
+    if (from < min || to < min || from > max || to > max) return false;
+    const [step] = this.steps.splice(from, 1);
+    this.steps.splice(to, 0, step);
+    return true;
+  }
+
   // ── Internal ───────────────────────────────────────────────────────
 
   private scheduleInterval(): void {

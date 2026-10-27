@@ -479,6 +479,46 @@ html, body {
   text-decoration: line-through;
 }
 
+.task-grip {
+  width: 8px;
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 3px);
+  gap: 2px;
+  align-content: center;
+  justify-content: center;
+  align-self: stretch;
+}
+
+.task-grip.movable {
+  cursor: grab;
+  touch-action: none;
+}
+
+.task-grip span {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  opacity: 0.45;
+}
+
+.task-item:hover .task-grip span,
+.task-item.dragging .task-grip span {
+  opacity: 1;
+}
+
+.task-list.reordering,
+.task-list.reordering * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+.task-item.dragging {
+  background: var(--surface-2);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
 .task-mark {
   width: 1.1rem;
   flex-shrink: 0;

@@ -101,6 +101,8 @@ export function initTaskPanel(): void {
   const tasks: Task[] = loadTasks();
   /** Seconds left in the current task, as last reported by the engine. */
   let remaining = 0;
+  /** True while a task row is being dragged; the list isn't rebuilt then. */
+  let dragging = false;
 
   const isActive = () => engine.state === 'running' || engine.state === 'paused';
 
@@ -132,16 +134,25 @@ export function initTaskPanel(): void {
     return 'pending';
   }
 
-  function render(): void {
+  function renderList(): void {
     const active = isActive();
-    const idx = engine.currentStepIndex;
 
-    // Task list
     $list.innerHTML = '';
     tasks.forEach((task, i) => {
       const status = statusOf(i);
       const li = document.createElement('li');
       li.className = `task-item ${status}`;
+      li.dataset.index = String(i);
+
+      // Grip to reorder; done/current tasks of an active run stay put
+      const grip = document.createElement('span');
+      grip.className = 'task-grip';
+      if (!active || status === 'pending') {
+        grip.classList.add('movable');
+        grip.title = 'Drag to reorder';
+        for (let d = 0; d < 6; d++) grip.appendChild(document.createElement('span'));
+        grip.addEventListener('pointerdown', (e) => startDrag(e, li));
+      }
 
       const mark = document.createElement('span');
       mark.className = 'task-mark';
@@ -156,7 +167,7 @@ export function initTaskPanel(): void {
       time.className = 'task-time';
       time.textContent = formatDuration(status === 'active' ? remaining : task.duration);
 
-      li.append(mark, name, time);
+      li.append(grip, mark, name, time);
 
       // While a run is active only upcoming tasks can be removed
       if (!active || status === 'pending') {
@@ -177,6 +188,13 @@ export function initTaskPanel(): void {
       empty.textContent = 'No tasks yet. Add one above.';
       $list.appendChild(empty);
     }
+  }
+
+  function render(): void {
+    const active = isActive();
+    const idx = engine.currentStepIndex;
+
+    if (!dragging) renderList();
 
     // Total time left
     let left = 0;
@@ -243,6 +261,68 @@ export function initTaskPanel(): void {
     save();
     if (!isActive()) reload();
     render();
+  }
+
+  function moveTask(from: number, to: number): void {
+    if (from === to) return;
+    // The engine refuses if the run moved on during the drag (e.g. the
+    // dragged task became current); then just snap the list back.
+    if (isActive() && !engine.moveStep(from, to)) return;
+    const [task] = tasks.splice(from, 1);
+    tasks.splice(to, 0, task);
+    save();
+    if (!isActive()) reload();
+  }
+
+  // ── Drag to reorder ────────────────────────────────────────────────
+
+  function startDrag(e: PointerEvent, li: HTMLLIElement): void {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const from = Number(li.dataset.index);
+    // Movable rows always form the tail of the list, so the dragged row can
+    // only be dropped before another movable row or at the very end.
+    const minIndex = isActive() ? engine.currentStepIndex + 1 : 0;
+
+    dragging = true;
+    li.classList.add('dragging');
+    $list.classList.add('reordering');
+
+    const onMove = (ev: PointerEvent) => {
+      // Scroll the list when dragging near its top or bottom edge
+      const box = $list.getBoundingClientRect();
+      if (ev.clientY < box.top + 20) $list.scrollTop -= 8;
+      else if (ev.clientY > box.bottom - 20) $list.scrollTop += 8;
+
+      const others = [...$list.querySelectorAll<HTMLLIElement>('.task-item')].filter(
+        (el) => el !== li && Number(el.dataset.index) >= minIndex,
+      );
+      const before = others.find((el) => {
+        const r = el.getBoundingClientRect();
+        return ev.clientY < r.top + r.height / 2;
+      });
+      if (before) {
+        if (li.nextElementSibling !== before) $list.insertBefore(li, before);
+      } else if ($list.lastElementChild !== li) {
+        $list.appendChild(li);
+      }
+    };
+
+    const onEnd = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onEnd);
+      window.removeEventListener('pointercancel', onEnd);
+      $list.classList.remove('reordering');
+      dragging = false;
+      moveTask(from, [...$list.children].indexOf(li));
+      render();
+    };
+
+    // Listen on window, not the grip: moving the row in the DOM would drop
+    // pointer capture on the grip and lose the rest of the gesture.
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onEnd);
+    window.addEventListener('pointercancel', onEnd);
   }
 
   // ── Events ─────────────────────────────────────────────────────────
